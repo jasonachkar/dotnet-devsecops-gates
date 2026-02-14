@@ -162,6 +162,8 @@ jobs:
       - uses: actions/checkout@v4
 
       # Analyze dependency changes introduced by this PR.
-      # Fails if any new dependency has a known High/Critical vulnerability.
+      # Fails if any new dependency has a known High or Critical vulnerability.
       - name: Dependency Review
         uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high

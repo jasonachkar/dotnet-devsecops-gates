@@ -114,16 +114,26 @@ The `.gitleaks.toml` includes a demo-only rule that detects lines starting with
 
 To trigger a failure for screenshots:
 
-```bash
-git checkout -b demo/secrets-leak
-# Create a file whose first line is the token DEMO_SECRET, an equals sign, then a value:
-printf 'DEMO_SECRET=leak_me\n' > demo/demo-leak.txt
-git add demo/demo-leak.txt
-git commit -m "Add demo leak for Gitleaks testing"
-git push -u origin demo/secrets-leak
-```
+1. Create a branch and add a file with the demo token on its own line:
 
-Open a PR to `main`, capture the Gitleaks failure screenshot, then **close the PR without merging**.
+   ```bash
+   git checkout -b demo/secrets-leak
+   mkdir -p demo
+   ```
+
+2. Create `demo/demo-leak.txt` containing **exactly one line**:
+   the word `DEMO_SECRET`, then `=`, then `leak_me` (no spaces, no quotes).
+
+3. Commit and push:
+
+   ```bash
+   git add demo/demo-leak.txt
+   git commit -m "Add demo leak for Gitleaks testing"
+   git push -u origin demo/secrets-leak
+   ```
+
+4. Open a PR to `main`, capture the Gitleaks failure screenshot.
+5. **Close the PR without merging** and delete the branch.
 
 ### 2. CodeQL Before/After
 
