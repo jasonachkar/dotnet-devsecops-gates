@@ -36,7 +36,7 @@ jobs:
 
     steps:
       # ----- Checkout -----
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # ----- SDK Setup -----
       # Install .NET 8 SDK. The 8.0.x pattern picks the latest 8.0 patch.
