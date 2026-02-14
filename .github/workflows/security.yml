@@ -83,6 +83,25 @@ jobs:
         uses: github/codeql-action/analyze@v4
         with:
           category: codeql
+          output: codeql-results
+
+      # Fail the job if CodeQL found error-level (High/Critical) findings.
+      # The analyze step always succeeds (it uploads SARIF regardless).
+      # This step inspects the SARIF output and exits non-zero if any
+      # result has level "error", making the check RED on the PR.
+      - name: Fail on high-severity findings
+        run: |
+          # Check all SARIF files for error-level results
+          for f in codeql-results/*.sarif; do
+            if [ -f "$f" ]; then
+              count=$(jq '[.runs[].results[] | select(.level == "error")] | length' "$f")
+              if [ "$count" -gt 0 ]; then
+                echo "::error::CodeQL found $count high-severity finding(s)"
+                exit 1
+              fi
+            fi
+          done
+          echo "No high-severity findings detected"
 
   # ===========================================================================
   # Job 2: Gitleaks — Secrets Scanning (dir mode)
