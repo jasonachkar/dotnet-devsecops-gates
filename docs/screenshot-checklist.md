@@ -20,11 +20,11 @@ Capture these screenshots in order for your portfolio and demo materials.
   Navigate to a CI workflow run > Artifacts section. Capture showing `sbom.spdx.json` available for download.
 
 - [ ] **Semgrep Alert on Vulnerable PR**
-  Open a PR from `demo/vulnerable-codeql` branch. Wait for Security workflow to complete.
+  Open a PR from `demo/vulnerable-sast` branch. Wait for Security workflow to complete.
   Capture the failed Semgrep Analysis check showing XSS and open redirect findings.
 
 - [ ] **Clean Semgrep on Fix PR**
-  Open a PR from `demo/fix-codeql` branch. Capture the clean (no findings) Semgrep result.
+  Open a PR from `demo/fix-sast` branch. Capture the clean (no findings) Semgrep result.
 
 - [ ] **CodeQL Analysis (clean on main)**
   Navigate to Security tab > Code scanning alerts. Capture the alerts page (should show zero alerts on main).

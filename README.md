@@ -140,14 +140,14 @@ To trigger a Gitleaks failure for screenshots:
 
 ### 2. SAST Vulnerability Detection (Semgrep)
 
-**Vulnerable branch** (`demo/vulnerable-codeql`):
+**Vulnerable branch** (`demo/vulnerable-sast`):
 - Adds demo-only `/api/demo/xss` and `/api/demo/open-redirect` endpoints with no input validation
 - Marked with `// DEMO VULNERABLE` comments — does not modify existing secure endpoints
 - Semgrep custom rules (`.semgrep/demo-rules.yml`) detect the XSS and open redirect patterns
 - Open PR to main → wait for Security workflow → Semgrep Analysis turns RED
 - Capture the failure screenshot → **close PR without merging**
 
-**Fix branch** (`demo/fix-codeql`):
+**Fix branch** (`demo/fix-sast`):
 - Identical to main (secure code only, no vulnerable demo endpoints)
 - Open PR to main → Semgrep Analysis stays GREEN → close PR
 
