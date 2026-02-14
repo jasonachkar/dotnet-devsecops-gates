@@ -11,11 +11,11 @@
 #
 # How the demo works:
 #   1. Create a branch: git checkout -b demo/secrets-leak
-#   2. Add a file whose first line is the demo token, an equals sign, then a value
-#   3. Open a PR to main
+#   2. Add file docs/demo-leak.txt with: DEMO_SECRET=leak_me
+#   3. Push and open a PR to main
 #   4. Gitleaks detects the pattern and fails the PR check
 #   5. Screenshot the failure for your portfolio
-#   6. Close the PR without merging
+#   6. Close the PR without merging (never commit demo-leak.txt to main)
 #
 # The workflow runs gitleaks in "dir" mode (current working tree only),
 # so old commits in history do not cause false positives.
@@ -24,11 +24,13 @@
 title = "GatesDemo Gitleaks Config"
 
 # Demo rule: matches a line that STARTS with the token DEMO_SECRET
-# followed by an equals sign and a value. The start-of-line anchor (^)
-# and multiline flag (?m) prevent accidental matches inside prose,
-# comments, or inline code samples.
+# followed by an equals sign and a value. The rule is path-scoped to
+# only match docs/demo-leak.txt, so it cannot fire on main (where that
+# file should never exist). The keywords field enables fast pre-filtering.
 [[rules]]
 id = "demo-secret"
-description = "Demo secret pattern for portfolio demonstration"
+description = "Demo secret pattern for portfolio demonstration (scoped to demo file only)"
 regex = '''(?m)^DEMO_SECRET\s*=\s*.+$'''
+path = '''^docs/demo-leak\.txt$'''
+keywords = ["DEMO_SECRET"]
 tags = ["demo", "secret"]

@@ -1,7 +1,7 @@
 # =============================================================================
 # ci.yml — Continuous Integration Workflow (GitHub Actions)
 # =============================================================================
-# This workflow runs on every push to main and on PRs targeting main.
+# This workflow runs on pushes to main and demo/** branches, and on PRs targeting main.
 # It performs: build, test, format check, vulnerability scan, and SBOM generation.
 #
 # Gates enforced:
@@ -18,7 +18,9 @@ name: CI
 
 on:
   push:
-    branches: [main]           # Run on direct pushes to main
+    branches:
+      - main                   # Run on direct pushes to main
+      - 'demo/**'              # Run on demo branches for portfolio screenshots
   pull_request:
     branches: [main]           # Run on PRs targeting main
   workflow_dispatch:           # Allow manual triggering from Actions UI

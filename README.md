@@ -109,31 +109,32 @@ Configured in `.github/dependabot.yml` for weekly updates to GitHub Actions and 
 
 ### 1. Secrets Scanning Failure (Safe Demo)
 
-The `.gitleaks.toml` includes a demo-only rule that detects lines starting with
-`DEMO_SECRET` followed by an equals sign and a value.
+> **Main stays green.** The `.gitleaks.toml` demo rule is path-scoped to
+> `docs/demo-leak.txt`, so it only fires when that file exists. That file
+> should **never** be committed to main.
 
-To trigger a failure for screenshots:
+To trigger a Gitleaks failure for screenshots:
 
-1. Create a branch and add a file with the demo token on its own line:
+1. Create a demo branch:
 
    ```bash
    git checkout -b demo/secrets-leak
-   mkdir -p demo
    ```
 
-2. Create `demo/demo-leak.txt` containing **exactly one line**:
+2. Create the file `docs/demo-leak.txt` containing **exactly one line**:
    the word `DEMO_SECRET`, then `=`, then `leak_me` (no spaces, no quotes).
 
 3. Commit and push:
 
    ```bash
-   git add demo/demo-leak.txt
+   git add docs/demo-leak.txt
    git commit -m "Add demo leak for Gitleaks testing"
    git push -u origin demo/secrets-leak
    ```
 
-4. Open a PR to `main`, capture the Gitleaks failure screenshot.
-5. **Close the PR without merging** and delete the branch.
+4. Open a PR to `main` — the Security workflow will fail (Gitleaks red).
+5. Screenshot the failure for your portfolio.
+6. **Close the PR without merging** and delete the branch.
 
 ### 2. CodeQL Before/After
 
