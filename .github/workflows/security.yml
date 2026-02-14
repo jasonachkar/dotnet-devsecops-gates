@@ -85,23 +85,75 @@ jobs:
           category: codeql
           output: codeql-results
 
-      # Fail the job if CodeQL found error-level (High/Critical) findings.
-      # The analyze step always succeeds (it uploads SARIF regardless).
-      # This step inspects the SARIF output and exits non-zero if any
-      # result has level "error", making the check RED on the PR.
-      - name: Fail on high-severity findings
+      # Branch-aware CodeQL gate.
+      # - Fails closed if no SARIF files exist (safe default).
+      # - Demo branches (demo/*): fail on ANY finding regardless of severity.
+      # - Other branches (main, etc.): fail only on High/Critical findings
+      #   (security-severity >= 7.0 in SARIF rule metadata).
+      #
+      # We parse security-severity from rule properties instead of relying
+      # on SARIF .level, because CodeQL marks most security findings as
+      # level "warning" even when they are High/Critical severity.
+      - name: Enforce CodeQL gate
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          HEAD_REF: ${{ github.head_ref }}
         run: |
-          # Check all SARIF files for error-level results
-          for f in codeql-results/*.sarif; do
-            if [ -f "$f" ]; then
-              count=$(jq '[.runs[].results[] | select(.level == "error")] | length' "$f")
-              if [ "$count" -gt 0 ]; then
-                echo "::error::CodeQL found $count high-severity finding(s)"
-                exit 1
-              fi
-            fi
+          set -euo pipefail
+          source_branch="${HEAD_REF:-$REF_NAME}"
+
+          shopt -s nullglob
+          sarif_files=(codeql-results/*.sarif)
+
+          if [ "${#sarif_files[@]}" -eq 0 ]; then
+            echo "::error::No SARIF files found in codeql-results; cannot evaluate CodeQL gate"
+            exit 1
+          fi
+
+          total_results=0
+          high_or_critical_results=0
+
+          for f in "${sarif_files[@]}"; do
+            file_total=$(jq '[.runs[]?.results[]?] | length' "$f")
+
+            file_high=$(jq '
+              [
+                .runs[]? as $run
+                | (
+                    reduce (
+                      [ $run.tool.driver.rules[]?, $run.tool.extensions[]?.rules[]? ][]?
+                    ) as $rule ({}; .[$rule.id] = (($rule.properties["security-severity"] // "0") | tonumber? // 0))
+                  ) as $rule_severity
+                | $run.results[]?
+                | ($rule_severity[.ruleId] // 0) as $security_severity
+                | select($security_severity >= 7.0)
+              ]
+              | length
+            ' "$f")
+
+            total_results=$((total_results + file_total))
+            high_or_critical_results=$((high_or_critical_results + file_high))
           done
-          echo "No high-severity findings detected"
+
+          echo "Source branch: $source_branch"
+          echo "CodeQL total results: $total_results"
+          echo "CodeQL high/critical results: $high_or_critical_results"
+
+          if [[ "$source_branch" == demo/* ]]; then
+            if [ "$total_results" -gt 0 ]; then
+              echo "::error::CodeQL found $total_results finding(s) on demo branch '$source_branch'"
+              exit 1
+            fi
+            echo "No CodeQL findings on demo branch '$source_branch'"
+            exit 0
+          fi
+
+          if [ "$high_or_critical_results" -gt 0 ]; then
+            echo "::error::CodeQL found $high_or_critical_results high/critical finding(s) on branch '$source_branch'"
+            exit 1
+          fi
+
+          echo "No high/critical CodeQL findings on branch '$source_branch'"
 
   # ===========================================================================
   # Job 2: Gitleaks — Secrets Scanning (dir mode)
