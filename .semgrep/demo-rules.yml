@@ -1,0 +1,67 @@
+rules:
+  # =========================================================================
+  # Rule: Reflected XSS via Response.WriteAsync
+  # =========================================================================
+  # Detects user-controlled data from HttpContext.Request written directly
+  # into an HTML response without encoding. This is a textbook reflected
+  # XSS vulnerability (CWE-79, OWASP A7:2017).
+  #
+  # Semgrep pattern-based matching catches this even in minimal API lambdas
+  # where CodeQL's C# dataflow analysis has limited coverage.
+  - id: csharp-xss-response-write
+    patterns:
+      - pattern: |
+          var $VAR = ctx.Request.Query[$KEY].ToString();
+          ...
+          ctx.Response.WriteAsync($"...<$TAG>... {$VAR} ...</$TAG>...");
+      - pattern-not: |
+          var $VAR = ctx.Request.Query[$KEY].ToString();
+          ...
+          $VAR = System.Net.WebUtility.HtmlEncode($VAR);
+          ...
+          ctx.Response.WriteAsync(...);
+    message: >
+      User input from Request.Query is written directly into HTML via
+      Response.WriteAsync without encoding. This allows reflected XSS.
+      Fix: use System.Net.WebUtility.HtmlEncode() before writing to response.
+    languages: [csharp]
+    severity: ERROR
+    metadata:
+      cwe:
+        - "CWE-79: Improper Neutralization of Input During Web Page Generation"
+      owasp:
+        - "A03:2021 - Injection"
+      confidence: HIGH
+      impact: HIGH
+
+  # =========================================================================
+  # Rule: Unvalidated redirect via Response.Redirect
+  # =========================================================================
+  # Detects user-controlled data from HttpContext.Request passed directly
+  # to Response.Redirect without host/scheme validation. This is an open
+  # redirect vulnerability (CWE-601, OWASP A10:2021).
+  - id: csharp-open-redirect
+    patterns:
+      - pattern: |
+          var $VAR = ctx.Request.Query[$KEY].ToString();
+          ...
+          ctx.Response.Redirect($VAR);
+      - pattern-not: |
+          var $VAR = ctx.Request.Query[$KEY].ToString();
+          ...
+          if(<... Uri.TryCreate($VAR, ...) ...>) { ... }
+          ...
+          ctx.Response.Redirect(...);
+    message: >
+      User input from Request.Query is passed directly to Response.Redirect
+      without URL validation. This allows an attacker to redirect users to
+      malicious sites. Fix: validate the URL scheme and host against an allowlist.
+    languages: [csharp]
+    severity: ERROR
+    metadata:
+      cwe:
+        - "CWE-601: URL Redirection to Untrusted Site"
+      owasp:
+        - "A03:2021 - Injection"
+      confidence: HIGH
+      impact: HIGH

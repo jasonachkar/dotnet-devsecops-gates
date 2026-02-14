@@ -4,7 +4,8 @@ A portfolio-ready **.NET 8 Web API** repository demonstrating **DevSecOps securi
 
 | Gate | Tool | Platform |
 |------|------|----------|
-| SAST | CodeQL (security-extended) | GitHub Actions |
+| SAST (dataflow) | CodeQL (security-extended) | GitHub Actions |
+| SAST (pattern) | Semgrep (custom rules) | GitHub Actions |
 | Secrets Scanning | Gitleaks | GitHub Actions |
 | Dependency Review | dependency-review-action | GitHub Actions (PR) |
 | Vulnerability Check | `dotnet list package --vulnerable` | GitHub Actions |
@@ -75,10 +76,11 @@ Runs on push/PR to main:
 
 ### Security Workflow (`.github/workflows/security.yml`)
 
-Runs on push/PR to main:
-1. **CodeQL** — C# SAST with `security-extended` queries
+Runs on push/PR to main and `demo/**` branches:
+1. **CodeQL** — C# SAST with `security-extended` queries (dataflow analysis)
 2. **Gitleaks** — Secrets scanning with custom demo rule
-3. **Dependency Review** — Blocks PRs introducing vulnerable dependencies (PR only)
+3. **Semgrep** — Pattern-based SAST with custom rules (catches XSS, open redirects in minimal API lambdas)
+4. **Dependency Review** — Blocks PRs introducing vulnerable dependencies (PR only)
 
 > **Note:** Code Scanning alerts and Dependency Review UI features require the repository to be **public**, or require [GitHub Advanced Security](https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security) licensing for private repositories.
 
@@ -136,17 +138,18 @@ To trigger a Gitleaks failure for screenshots:
 5. Screenshot the failure for your portfolio.
 6. **Close the PR without merging** and delete the branch.
 
-### 2. CodeQL Before/After
+### 2. SAST Vulnerability Detection (Semgrep)
 
 **Vulnerable branch** (`demo/vulnerable-codeql`):
 - Adds demo-only `/api/demo/xss` and `/api/demo/open-redirect` endpoints with no input validation
 - Marked with `// DEMO VULNERABLE` comments — does not modify existing secure endpoints
-- Open PR to main → wait for Security workflow → PR > Checks > Code scanning results
-- Capture the CodeQL alert screenshot → **close PR without merging**
+- Semgrep custom rules (`.semgrep/demo-rules.yml`) detect the XSS and open redirect patterns
+- Open PR to main → wait for Security workflow → Semgrep Analysis turns RED
+- Capture the failure screenshot → **close PR without merging**
 
 **Fix branch** (`demo/fix-codeql`):
 - Identical to main (secure code only, no vulnerable demo endpoints)
-- Open PR to main → capture clean CodeQL result → close PR
+- Open PR to main → Semgrep Analysis stays GREEN → close PR
 
 ---
 

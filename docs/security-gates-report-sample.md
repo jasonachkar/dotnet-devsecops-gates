@@ -10,7 +10,8 @@
 
 | Gate | Tool | Trigger | Platform | Blocks Merge? |
 |------|------|---------|----------|---------------|
-| SAST (Static Analysis) | CodeQL | Push & PR to main | GitHub Actions | Yes — on High/Critical findings |
+| SAST (dataflow) | CodeQL | Push & PR to main | GitHub Actions | Yes — on High/Critical findings |
+| SAST (pattern) | Semgrep (custom rules) | Push & PR to main | GitHub Actions | Yes — on any finding |
 | Secrets Scanning | Gitleaks | Push & PR to main | GitHub Actions | Yes — on any detected secret |
 | Dependency Review | dependency-review-action | PR to main | GitHub Actions | Yes — on High/Critical vulnerabilities |
 | Vulnerability Scan | `dotnet list package --vulnerable` | Push & PR to main | GitHub Actions | Yes — on any vulnerable package |

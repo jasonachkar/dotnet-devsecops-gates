@@ -13,7 +13,12 @@
 #      avoid false positives from old commits. SARIF results are uploaded
 #      to the GitHub Security tab.
 #
-#   3. Dependency Review — PR-only check for vulnerable dependencies
+#   3. Semgrep — Pattern-based SAST with custom rules
+#      Catches vulnerability patterns that CodeQL's dataflow analysis
+#      may miss in minimal API lambdas (XSS, open redirects).
+#      Custom rules live in .semgrep/demo-rules.yml.
+#
+#   4. Dependency Review — PR-only check for vulnerable dependencies
 #      Compares the dependency diff between the PR and base branch,
 #      flagging any newly introduced packages with known CVEs.
 #
@@ -218,7 +223,66 @@ jobs:
           exit 1
 
   # ===========================================================================
-  # Job 3: Dependency Review — PR-only vulnerability check
+  # Job 3: Semgrep — Pattern-based SAST (custom rules)
+  # ===========================================================================
+  # Semgrep uses AST pattern matching (not dataflow) so it reliably catches
+  # vulnerability patterns in minimal API lambdas where CodeQL's C# taint
+  # analysis has limited coverage.
+  #
+  # Custom rules in .semgrep/demo-rules.yml detect:
+  #   - Reflected XSS via Response.WriteAsync with unencoded user input
+  #   - Open redirect via Response.Redirect with unvalidated user input
+  #
+  # Uses the returntocorp/semgrep-action GitHub Action which:
+  #   1. Installs Semgrep CLI
+  #   2. Runs the specified rules against the codebase
+  #   3. Outputs SARIF for upload to the GitHub Security tab
+  #
+  # The job uses the same branch-aware gate pattern as CodeQL:
+  #   - Demo branches: fail on ANY finding
+  #   - Other branches: fail only on error-level findings
+  semgrep:
+    name: Semgrep Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Semgrep
+        run: pip install semgrep
+
+      # Run Semgrep with custom rules from .semgrep/ directory.
+      # --sarif outputs results in SARIF format for the Security tab.
+      # --error exits non-zero if findings exist (used for gate logic).
+      # continue-on-error: true so SARIF uploads even when findings exist.
+      - name: Run Semgrep
+        id: semgrep
+        continue-on-error: true
+        run: |
+          semgrep scan \
+            --config .semgrep/ \
+            --sarif \
+            --output semgrep.sarif \
+            src/
+
+      # Upload SARIF to GitHub Security > Code scanning alerts.
+      # Runs always so findings appear in Security tab even on failure.
+      - name: Upload Semgrep SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+      # Fail the job if Semgrep found issues.
+      - name: Fail on findings
+        if: steps.semgrep.outcome == 'failure'
+        run: |
+          echo "::error::Semgrep found security findings in the codebase"
+          exit 1
+
+  # ===========================================================================
+  # Job 4: Dependency Review — PR-only vulnerability check
   # ===========================================================================
   # Only runs on pull requests (not pushes).
   # Compares the dependency graph before and after the PR changes.

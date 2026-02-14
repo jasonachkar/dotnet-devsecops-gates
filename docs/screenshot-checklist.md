@@ -19,11 +19,15 @@ Capture these screenshots in order for your portfolio and demo materials.
 - [ ] **SBOM Artifact**
   Navigate to a CI workflow run > Artifacts section. Capture showing `sbom.spdx.json` available for download.
 
-- [ ] **CodeQL Alert on Vulnerable PR**
-  Open a PR from `demo/vulnerable-codeql` branch. Capture the CodeQL alert for unvalidated URL redirection.
+- [ ] **Semgrep Alert on Vulnerable PR**
+  Open a PR from `demo/vulnerable-codeql` branch. Wait for Security workflow to complete.
+  Capture the failed Semgrep Analysis check showing XSS and open redirect findings.
 
-- [ ] **Clean CodeQL on Fix PR**
-  Open a PR from `demo/fix-codeql` branch. Capture the clean (no alerts) CodeQL result.
+- [ ] **Clean Semgrep on Fix PR**
+  Open a PR from `demo/fix-codeql` branch. Capture the clean (no findings) Semgrep result.
+
+- [ ] **CodeQL Analysis (clean on main)**
+  Navigate to Security tab > Code scanning alerts. Capture the alerts page (should show zero alerts on main).
 
 ## Azure DevOps
 
