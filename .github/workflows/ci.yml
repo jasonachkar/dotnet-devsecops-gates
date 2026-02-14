@@ -1,12 +1,30 @@
+# =============================================================================
+# ci.yml — Continuous Integration Workflow (GitHub Actions)
+# =============================================================================
+# This workflow runs on every push to main and on PRs targeting main.
+# It performs: build, test, format check, vulnerability scan, and SBOM generation.
+#
+# Gates enforced:
+#   1. Build must succeed (with TreatWarningsAsErrors in CI mode)
+#   2. All tests must pass
+#   3. Code formatting must match .editorconfig rules
+#   4. No known vulnerable NuGet packages
+#   5. SBOM artifact is generated for compliance/audit
+#
+# The workflow uses ubuntu-latest for consistency with Azure DevOps (also Linux).
+# =============================================================================
+
 name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main]           # Run on direct pushes to main
   pull_request:
-    branches: [main]
-  workflow_dispatch:
+    branches: [main]           # Run on PRs targeting main
+  workflow_dispatch:           # Allow manual triggering from Actions UI
 
+# Principle of least privilege — only read access to repo contents.
+# No write permissions needed for CI build/test.
 permissions:
   contents: read
 
@@ -15,22 +33,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ----- Checkout -----
       - uses: actions/checkout@v4
 
+      # ----- SDK Setup -----
+      # Install .NET 8 SDK. The 8.0.x pattern picks the latest 8.0 patch.
+      # This matches the SDK version pinned in global.json.
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
+      # ----- Restore -----
+      # Restore NuGet packages. Versions come from Directory.Packages.props
+      # (central package management).
       - name: Restore
         run: dotnet restore
 
+      # ----- Build -----
+      # Build in Release mode with CI strictness enabled.
+      # -p:ContinuousIntegrationBuild=true activates TreatWarningsAsErrors
+      # from Directory.Build.props, so any warning fails the build in CI
+      # but not during local development.
+      # --no-restore skips redundant restore since we already ran it above.
       - name: Build
         run: dotnet build -c Release --no-restore -p:ContinuousIntegrationBuild=true
 
+      # ----- Test -----
+      # Run all tests in Release mode (matching the build config).
+      # --no-build reuses the build output from the previous step.
+      # --logger trx outputs Visual Studio Test Results format for artifact upload.
       - name: Test
         run: dotnet test -c Release --no-build --logger trx --results-directory TestResults
 
+      # ----- Upload Test Results -----
+      # Upload .trx test result files as a downloadable artifact.
+      # if: always() ensures results are uploaded even if tests fail,
+      # so you can diagnose failures from the Actions UI.
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -38,9 +77,19 @@ jobs:
           name: test-results
           path: TestResults/*.trx
 
+      # ----- Format Check -----
+      # Verify all C# files match the formatting rules in .editorconfig.
+      # --verify-no-changes exits with non-zero if any file needs reformatting.
+      # This catches formatting drift without auto-fixing (CI should report, not fix).
+      # dotnet format is built into the .NET SDK 6+, no tool install needed.
       - name: Format check
         run: dotnet format --verify-no-changes --verbosity diagnostic
 
+      # ----- Vulnerability Check -----
+      # Scan NuGet packages for known CVEs using the built-in dotnet CLI.
+      # --include-transitive checks both direct and transitive dependencies.
+      # The grep check fails the build if the output contains the vulnerability
+      # indicator text. This is a lightweight alternative to third-party SCA tools.
       - name: Vulnerability check
         run: |
           dotnet list package --vulnerable --include-transitive 2>&1 | tee vuln.log
@@ -49,6 +98,11 @@ jobs:
             exit 1
           fi
 
+      # ----- SBOM Generation -----
+      # Generate a Software Bill of Materials in SPDX JSON format.
+      # SPDX is an industry-standard format for listing all components in a build.
+      # The SBOM artifact can be used for compliance audits, supply chain security,
+      # and vulnerability tracking. Downloaded from the workflow run's Artifacts tab.
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:

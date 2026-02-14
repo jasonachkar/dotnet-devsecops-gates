@@ -1,36 +1,73 @@
+# =============================================================================
+# .editorconfig — Code Formatting Rules
+# =============================================================================
+# EditorConfig defines formatting rules that are enforced by:
+#   1. IDEs (Visual Studio, VS Code, Rider) — real-time formatting
+#   2. dotnet format — CI format check (--verify-no-changes)
+#   3. MSBuild — when EnforceCodeStyleInBuild=true (set in Directory.Build.props)
+#
+# This ensures consistent code style across all contributors and environments.
+# CI runs `dotnet format --verify-no-changes` to catch formatting drift.
+#
+# Key design decisions:
+#   - end_of_line = lf: Linux-compatible for CI runners (Ubuntu)
+#   - indent_size = 4 for C#, 2 for XML/JSON/YAML (industry standard)
+#   - var preference: use var when type is obvious (C# convention)
+#   - Always use braces: prevents single-line if/else bugs
+# =============================================================================
+
+# This is the root .editorconfig — stop searching parent directories
 root = true
 
+# --- Default rules for all files ---
 [*]
 indent_style = space
 indent_size = 4
-end_of_line = lf
+end_of_line = lf                    # LF for Linux CI compatibility
 charset = utf-8
 trim_trailing_whitespace = true
-insert_final_newline = true
+insert_final_newline = true         # POSIX compliance — files end with newline
 
+# --- XML-based files (csproj, props, targets) use 2-space indent ---
 [*.{csproj,props,targets,xml}]
 indent_size = 2
 
+# --- JSON and YAML use 2-space indent ---
 [*.{json,yml,yaml}]
 indent_size = 2
 
+# --- Markdown: don't trim trailing whitespace (two spaces = line break) ---
 [*.md]
 trim_trailing_whitespace = false
 
+# --- C# specific rules ---
 [*.cs]
+# Sort System.* using directives first (convention in .NET ecosystem)
 dotnet_sort_system_directives_first = true
+
+# Allman brace style — opening brace on its own line (standard C# style)
 csharp_new_line_before_open_brace = all
 csharp_new_line_before_else = true
 csharp_new_line_before_catch = true
 csharp_new_line_before_finally = true
+
+# Switch statement formatting
 csharp_indent_case_contents = true
 csharp_indent_switch_labels = true
+
+# Use 'var' when the type is obvious from the right-hand side
 csharp_style_var_for_built_in_types = true:suggestion
 csharp_style_var_when_type_is_apparent = true:suggestion
 csharp_style_var_elsewhere = true:suggestion
+
+# Always use braces for if/else/for/while (prevents bugs from single-line bodies)
 csharp_prefer_braces = true:suggestion
+
+# Expression-bodied members — use for simple single-line methods and properties
 csharp_style_expression_bodied_methods = when_on_single_line:suggestion
 csharp_style_expression_bodied_properties = true:suggestion
+
+# Don't qualify members with 'this.' — cleaner code
 dotnet_style_qualification_for_field = false:suggestion
 dotnet_style_qualification_for_property = false:suggestion
 dotnet_style_qualification_for_method = false:suggestion

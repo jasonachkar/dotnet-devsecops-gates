@@ -1,47 +1,109 @@
+# =============================================================================
+# azure-pipelines.yml — Azure DevOps Build + Security Pipeline
+# =============================================================================
+# This is the primary pipeline file for Azure DevOps.
+# A copy also lives at eng/pipelines/azure-pipelines.yml for organizational
+# structure (some teams prefer pipeline YAML in an eng/ folder).
+#
+# What this pipeline does:
+#   1. Installs .NET 8 SDK
+#   2. Restores NuGet packages
+#   3. Builds in Release mode with CI strictness (TreatWarningsAsErrors)
+#   4. Runs xUnit tests and publishes .trx results to the Tests tab
+#   5. Runs Microsoft Security DevOps scan (SARIF-based security analysis)
+#   6. Publishes all artifacts (test results + SARIF logs) for download
+#
+# PREREQUISITE: The "Microsoft Security DevOps" extension must be installed
+# in your Azure DevOps organization from the Marketplace:
+# https://marketplace.visualstudio.com/items?itemName=ms-securitydevops.microsoft-security-devops-azdevops
+#
+# Without the extension, the MicrosoftSecurityDevOps@1 task will fail with
+# a "task not found" error. This is a one-time org-level installation.
+# =============================================================================
+
+# Trigger: run on pushes to main branch
 trigger:
   branches:
     include:
       - main
 
+# PR validation: run on pull requests targeting main
 pr:
   branches:
     include:
       - main
 
+# Use Ubuntu for consistency with GitHub Actions (both use Linux).
+# MicrosoftSecurityDevOps@1 supports ubuntu-latest.
 pool:
   vmImage: 'ubuntu-latest'
 
+# Pipeline variable for build configuration.
+# Referenced as $(buildConfiguration) in steps below.
 variables:
   buildConfiguration: 'Release'
 
 steps:
+  # ----- Install .NET SDK -----
+  # UseDotNet@2 installs the specified SDK version on the agent.
+  # 8.0.x picks the latest .NET 8 patch, matching global.json.
   - task: UseDotNet@2
     displayName: 'Install .NET SDK'
     inputs:
       packageType: 'sdk'
       version: '8.0.x'
 
+  # ----- Restore -----
+  # Restore NuGet packages. Package versions are centrally managed
+  # in Directory.Packages.props (no versions in individual .csproj files).
   - script: dotnet restore
     displayName: 'Restore'
 
+  # ----- Build -----
+  # Build in Release mode with CI strictness.
+  # -p:ContinuousIntegrationBuild=true activates TreatWarningsAsErrors
+  # from Directory.Build.props (warnings become build-breaking errors in CI).
+  # --no-restore skips redundant restore.
   - script: dotnet build -c $(buildConfiguration) --no-restore -p:ContinuousIntegrationBuild=true
     displayName: 'Build'
 
+  # ----- Test -----
+  # Run tests and output results in .trx format to the staging directory.
+  # The staging directory is used because PublishTestResults@2 needs a
+  # well-known path, and $(Build.ArtifactStagingDirectory) is auto-cleaned.
   - script: dotnet test -c $(buildConfiguration) --no-build --logger trx --results-directory $(Build.ArtifactStagingDirectory)/TestResults
     displayName: 'Test'
 
+  # ----- Publish Test Results -----
+  # Makes test results visible in the Azure DevOps pipeline Tests tab.
+  # condition: succeededOrFailed() ensures results are published even if
+  # tests fail, so you can see which tests failed from the pipeline UI.
   - task: PublishTestResults@2
     displayName: 'Publish Test Results'
     inputs:
-      testResultsFormat: 'VSTest'
+      testResultsFormat: 'VSTest'        # .trx format from dotnet test
       testResultsFiles: '$(Build.ArtifactStagingDirectory)/TestResults/**/*.trx'
     condition: succeededOrFailed()
 
+  # ----- Microsoft Security DevOps -----
+  # Runs a suite of security analyzers (credential scanning, SARIF reporting).
+  # publish: true automatically publishes SARIF results to the pipeline.
+  #
+  # SARIF (Static Analysis Results Interchange Format) is a standard JSON
+  # format for security tool output, viewable in VS Code with SARIF Viewer
+  # or in Azure DevOps Advanced Security (if enabled).
+  #
+  # REQUIRES: "Microsoft Security DevOps" extension installed in the org.
   - task: MicrosoftSecurityDevOps@1
     displayName: 'Microsoft Security DevOps'
     inputs:
       publish: true
 
+  # ----- Publish Artifacts -----
+  # Publishes all staged artifacts (test results + any SARIF output)
+  # as a downloadable "CodeAnalysisLogs" artifact.
+  # This makes the SARIF files available for download from the pipeline run page.
+  # condition: succeededOrFailed() ensures artifacts are published even on failure.
   - task: PublishBuildArtifacts@1
     displayName: 'Publish CodeAnalysisLogs'
     inputs:

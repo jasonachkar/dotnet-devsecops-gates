@@ -1,19 +1,46 @@
+<!--
+  GatesDemo.Api.Tests.csproj — Integration Test Project
+
+  Tests the API endpoints using WebApplicationFactory (in-memory test server).
+  No real HTTP ports or external services needed — everything runs in-process.
+
+  Key settings:
+    - IsPackable=false: this project should never be published as a NuGet package
+    - IsTestProject=true: tells the SDK this is a test project (affects build behavior)
+
+  Package references have NO Version attributes — versions come from
+  Directory.Packages.props (central package management).
+
+  ProjectReference to GatesDemo.Api gives access to the Program class
+  needed by WebApplicationFactory<Program>.
+-->
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- This is a test project, not a distributable package -->
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- WebApplicationFactory — spins up the API in-memory for integration tests -->
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+
+    <!-- Test SDK — required runtime host for dotnet test -->
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+
+    <!-- xUnit test framework -->
     <PackageReference Include="xunit" />
+
+    <!-- xUnit test runner for VS and CLI -->
     <PackageReference Include="xunit.runner.visualstudio" />
+
+    <!-- Code coverage collector -->
     <PackageReference Include="coverlet.collector" />
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Reference the API project so WebApplicationFactory<Program> can discover it -->
     <ProjectReference Include="..\..\src\GatesDemo.Api\GatesDemo.Api.csproj" />
   </ItemGroup>
 

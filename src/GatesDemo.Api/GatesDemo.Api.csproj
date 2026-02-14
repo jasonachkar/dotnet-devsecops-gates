@@ -1,2 +1,18 @@
+<!--
+  GatesDemo.Api.csproj — ASP.NET Core Web API Project
+
+  This csproj is intentionally minimal. All shared properties are inherited
+  from Directory.Build.props (TargetFramework, Nullable, ImplicitUsings, etc.).
+
+  No NuGet packages are referenced because all middleware used in this API
+  (rate limiting, CORS, HSTS, ProblemDetails, health checks) ships with
+  the ASP.NET Core framework — no external dependencies needed.
+
+  The Sdk="Microsoft.NET.Sdk.Web" provides:
+    - Kestrel web server
+    - ASP.NET Core middleware pipeline
+    - Minimal API endpoint routing
+    - appsettings.json configuration binding
+-->
 <Project Sdk="Microsoft.NET.Sdk.Web">
 </Project>

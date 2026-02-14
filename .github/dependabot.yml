@@ -1,10 +1,28 @@
+# =============================================================================
+# dependabot.yml — Automated Dependency Updates
+# =============================================================================
+# Dependabot opens PRs to update dependencies on a weekly schedule.
+# This keeps the repo current with security patches and version updates.
+#
+# Two ecosystems are monitored:
+#   1. github-actions — updates action versions in .github/workflows/*.yml
+#      (e.g., actions/checkout@v4 -> v5 when available)
+#   2. nuget — updates NuGet package versions in Directory.Packages.props
+#      (central package management — Dependabot understands this format)
+#
+# PRs are created automatically. CI and Security workflows run on each PR,
+# so you get full gate coverage before merging any dependency update.
+# =============================================================================
+
 version: 2
 updates:
+  # Monitor GitHub Actions versions for security patches and updates
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
 
+  # Monitor NuGet packages for security patches and updates
   - package-ecosystem: "nuget"
     directory: "/"
     schedule:

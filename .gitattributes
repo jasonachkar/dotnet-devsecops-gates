@@ -1,2 +1,19 @@
+# =============================================================================
+# .gitattributes — Git Line Ending Configuration
+# =============================================================================
+# Forces consistent line endings across all platforms (Windows, macOS, Linux).
+#
+# Why LF everywhere?
+#   - CI runners use Linux (ubuntu-latest) — LF is native
+#   - .editorconfig also specifies end_of_line = lf
+#   - Prevents CRLF/LF mismatches that cause dotnet format failures
+#   - Git normalizes on commit, so Windows devs can still work normally
+#
+# Exception: .sln files must use CRLF because Visual Studio requires it.
+# =============================================================================
+
+# Default: auto-detect text files, normalize to LF in the repository
 * text=auto eol=lf
+
+# Solution files: Visual Studio requires CRLF line endings
 *.sln text eol=crlf

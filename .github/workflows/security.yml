@@ -1,18 +1,56 @@
+# =============================================================================
+# security.yml — Security Scanning Workflow (GitHub Actions)
+# =============================================================================
+# This workflow runs three independent security scanning jobs:
+#
+#   1. CodeQL (SAST) — Static Application Security Testing for C#
+#      Analyzes source code for vulnerability patterns like SQL injection,
+#      open redirects, XSS, insecure deserialization, etc.
+#
+#   2. Gitleaks — Secrets scanning across the full git history
+#      Detects API keys, tokens, passwords, and custom patterns defined
+#      in .gitleaks.toml. Uses full history (fetch-depth: 0) to catch
+#      secrets that were committed and later removed.
+#
+#   3. Dependency Review — PR-only check for vulnerable dependencies
+#      Compares the dependency diff between the PR and base branch,
+#      flagging any newly introduced packages with known CVEs.
+#
+# All three jobs run independently in parallel for faster feedback.
+#
+# NOTE: Code Scanning UI and Dependency Review features require the repo
+# to be public, or require GitHub Advanced Security for private repos.
+# =============================================================================
+
 name: Security
 
 on:
   push:
-    branches: [main]
+    branches: [main]           # Scan on pushes to main (baseline)
   pull_request:
-    branches: [main]
-  workflow_dispatch:
+    branches: [main]           # Scan on PRs targeting main
+  workflow_dispatch:           # Allow manual triggering
 
+# Permissions explained:
+#   contents: read       — needed to checkout code
+#   security-events: write — needed for CodeQL to upload SARIF results
+#                           to the Security tab (Code scanning alerts)
+#   pull-requests: read  — needed for dependency-review-action to read PR diff
 permissions:
   contents: read
   security-events: write
   pull-requests: read
 
 jobs:
+  # ===========================================================================
+  # Job 1: CodeQL — Static Application Security Testing (SAST)
+  # ===========================================================================
+  # CodeQL builds the C# project, creates a database of code flows, and
+  # runs security queries against it. Results appear in GitHub Security tab.
+  #
+  # Using v4 of codeql-action (latest stable).
+  # Query suite: security-extended — includes standard security queries plus
+  # additional coverage for common vulnerability patterns beyond the defaults.
   codeql:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
@@ -20,40 +58,80 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Initialize CodeQL — sets up the analysis database for C#.
+      # This must run BEFORE the build step so CodeQL can intercept
+      # the compilation and capture code flow information.
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           languages: csharp
-          queries: security-extended
+          queries: security-extended    # Broader coverage than default
 
+      # Autobuild — lets CodeQL detect and build the .NET project automatically.
+      # For .NET projects, it runs `dotnet build` under the hood.
+      # Using autobuild instead of manual build for simplicity and reliability.
       - name: Autobuild
         uses: github/codeql-action/autobuild@v4
 
+      # Analyze — runs the security queries and uploads SARIF results.
+      # Results appear in: GitHub repo > Security tab > Code scanning alerts.
+      # On PRs, alerts also appear as inline annotations on changed files.
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
 
+  # ===========================================================================
+  # Job 2: Gitleaks — Secrets Scanning
+  # ===========================================================================
+  # Scans the entire git history for leaked secrets using pattern matching.
+  # Custom rules are defined in .gitleaks.toml at the repo root.
+  #
+  # This repo includes a demo rule matching "DEMO_SECRET=..." to demonstrate
+  # the scanning capability without using real secrets.
+  #
+  # IMPORTANT: fetch-depth: 0 is required to clone full history.
+  # Without it, Gitleaks only scans the latest commit and misses
+  # secrets that were committed and later deleted.
   gitleaks:
     name: Secrets Scanning
     runs-on: ubuntu-latest
 
     steps:
+      # Clone with full history — Gitleaks needs all commits to scan
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0             # Full clone, not shallow
 
+      # Run Gitleaks using the official GitHub Action (v2).
+      # GITHUB_TOKEN: auto-provided token for PR commenting.
+      # GITLEAKS_LICENSE: required for v2 — obtain a free trial at gitleaks.io
+      #                   and store as a repository secret.
       - name: Gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
+  # ===========================================================================
+  # Job 3: Dependency Review — PR-only vulnerability check
+  # ===========================================================================
+  # Only runs on pull requests (not pushes).
+  # Compares the dependency graph before and after the PR changes.
+  # Flags any newly introduced packages with known vulnerabilities (CVEs).
+  #
+  # This is complementary to the vulnerability check in ci.yml:
+  #   - ci.yml checks ALL current dependencies every run
+  #   - This job checks only NEWLY ADDED dependencies in the PR diff
+  #
+  # Requires the repo to be public or have GitHub Advanced Security enabled.
   dependency-review:
     name: Dependency Review
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request'    # Only run on PRs, not pushes
 
     steps:
       - uses: actions/checkout@v4
 
+      # Analyze dependency changes introduced by this PR.
+      # Fails if any new dependency has a known High/Critical vulnerability.
       - name: Dependency Review
         uses: actions/dependency-review-action@v4

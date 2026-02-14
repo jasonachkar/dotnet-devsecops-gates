@@ -1,5 +1,31 @@
+# =============================================================================
+# .gitleaks.toml — Gitleaks Secret Scanning Configuration
+# =============================================================================
+# This file defines custom rules for the Gitleaks secrets scanner.
+# Gitleaks scans the full git history for patterns that look like leaked
+# credentials (API keys, passwords, tokens, etc.).
+#
+# This repo intentionally includes ONLY a demo rule — no real secrets
+# should ever be committed. The demo rule exists to demonstrate the
+# scanning capability in portfolio screenshots without using real credentials.
+#
+# How the demo works:
+#   1. Create a branch: git checkout -b demo/secrets-leak
+#   2. Add a file with: DEMO_SECRET=leak_me
+#   3. Open a PR to main
+#   4. Gitleaks detects the pattern and fails the PR check
+#   5. Screenshot the failure for your portfolio
+#   6. Close the PR without merging
+#
+# Gitleaks auto-detects this file at the repo root.
+# The GitHub Action (gitleaks-action@v2) uses it automatically.
+# =============================================================================
+
 title = "GatesDemo Gitleaks Config"
 
+# Demo rule: matches any line containing "DEMO_SECRET = <value>"
+# This is a safe, non-sensitive pattern used purely for demonstration.
+# The regex allows optional whitespace around the equals sign.
 [[rules]]
 id = "demo-secret"
 description = "Demo secret pattern for portfolio demonstration"

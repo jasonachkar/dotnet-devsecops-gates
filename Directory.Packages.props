@@ -1,12 +1,48 @@
+<!--
+  =============================================================================
+  Directory.Packages.props — Central Package Management
+  =============================================================================
+  All NuGet package versions are defined here, not in individual .csproj files.
+  This ensures consistent versions across all projects and makes updates atomic.
+
+  How it works:
+    - .csproj files use <PackageReference Include="..." /> WITHOUT a Version.
+    - The Version comes from the matching <PackageVersion> entry here.
+    - If a .csproj references a package not listed here, the build fails.
+
+  Benefits:
+    - Single place to update all package versions
+    - No version conflicts between projects
+    - Dependabot understands this format and opens PRs here
+    - Clear audit trail of all external dependencies
+
+  Package choices explained:
+    - Microsoft.AspNetCore.Mvc.Testing: WebApplicationFactory for integration tests
+    - Microsoft.NET.Test.Sdk: Required test host for dotnet test
+    - xunit: Test framework (v2, mature and widely supported)
+    - xunit.runner.visualstudio: Test runner adapter for VS and dotnet test
+    - coverlet.collector: Code coverage data collection
+  =============================================================================
+-->
 <Project>
   <PropertyGroup>
+    <!-- Enable central package version management for the entire repo -->
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Integration test host — spins up ASP.NET Core in-memory for testing -->
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.12" />
+
+    <!-- Test SDK — required runtime for dotnet test command -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+
+    <!-- xUnit test framework (v2 — stable, well-documented) -->
     <PackageVersion Include="xunit" Version="2.9.3" />
+
+    <!-- xUnit runner for Visual Studio and dotnet test CLI (v2-compatible) -->
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+
+    <!-- Code coverage collector — generates coverage data during test runs -->
     <PackageVersion Include="coverlet.collector" Version="6.0.2" />
   </ItemGroup>
 </Project>

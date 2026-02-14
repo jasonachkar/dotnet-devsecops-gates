@@ -1,9 +1,39 @@
+<!--
+  =============================================================================
+  Directory.Build.props — Shared Build Settings for All Projects
+  =============================================================================
+  This file is auto-imported by MSBuild for every project in the repo.
+  It sets common properties so individual .csproj files stay minimal.
+
+  Key decisions:
+    - TargetFramework: net8.0 (LTS, supported through Nov 2026)
+    - Nullable: enabled for compile-time null safety
+    - ImplicitUsings: enabled to reduce boilerplate using statements
+    - EnforceCodeStyleInBuild: validates .editorconfig rules during build
+    - TreatWarningsAsErrors: ONLY in CI (ContinuousIntegrationBuild=true)
+      This prevents warnings from accumulating in CI while not blocking
+      local development with every minor warning.
+
+  CI pipelines pass -p:ContinuousIntegrationBuild=true to activate strictness.
+  =============================================================================
+-->
 <Project>
   <PropertyGroup>
+    <!-- Target .NET 8 LTS for all projects in the repo -->
     <TargetFramework>net8.0</TargetFramework>
+
+    <!-- Enable nullable reference types for compile-time null safety -->
     <Nullable>enable</Nullable>
+
+    <!-- Auto-import common namespaces (System, System.Collections.Generic, etc.) -->
     <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Enforce .editorconfig formatting rules during build -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- Treat warnings as errors ONLY in CI builds.
+         Pipelines set ContinuousIntegrationBuild=true via -p flag.
+         Local dev builds remain warning-tolerant for faster iteration. -->
     <TreatWarningsAsErrors Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</TreatWarningsAsErrors>
   </PropertyGroup>
 </Project>
