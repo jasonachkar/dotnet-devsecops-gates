@@ -139,13 +139,13 @@ To trigger a Gitleaks failure for screenshots:
 ### 2. CodeQL Before/After
 
 **Vulnerable branch** (`demo/vulnerable-codeql`):
-- Adds demo-only `/api/demo/xss` and `/api/demo/open-redirect` endpoints with no input validation
+- Adds a demo-only `/api/demo/open-redirect` endpoint with no URL validation
 - Marked with `// DEMO VULNERABLE` comments — does not modify existing secure endpoints
-- Open PR to main → wait for Security workflow → PR > Checks > Code scanning results
-- Capture the CodeQL alert screenshot → **close PR without merging**
+- Open PR to main → wait for Security workflow → go to PR > Checks > Code scanning results
+- Capture the open redirect alert screenshot → **close PR without merging**
 
 **Fix branch** (`demo/fix-codeql`):
-- Identical to main (secure code only, no vulnerable demo endpoints)
+- Identical to main (secure code only, no vulnerable demo endpoint)
 - Open PR to main → capture clean CodeQL result → close PR
 
 ---
