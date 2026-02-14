@@ -1,0 +1,7 @@
+title = "GatesDemo Gitleaks Config"
+
+[[rules]]
+id = "demo-secret"
+description = "Demo secret pattern for portfolio demonstration"
+regex = '''DEMO_SECRET\s*=\s*.+'''
+tags = ["demo", "secret"]

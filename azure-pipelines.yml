@@ -1,0 +1,50 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  buildConfiguration: 'Release'
+
+steps:
+  - task: UseDotNet@2
+    displayName: 'Install .NET SDK'
+    inputs:
+      packageType: 'sdk'
+      version: '8.0.x'
+
+  - script: dotnet restore
+    displayName: 'Restore'
+
+  - script: dotnet build -c $(buildConfiguration) --no-restore -p:ContinuousIntegrationBuild=true
+    displayName: 'Build'
+
+  - script: dotnet test -c $(buildConfiguration) --no-build --logger trx --results-directory $(Build.ArtifactStagingDirectory)/TestResults
+    displayName: 'Test'
+
+  - task: PublishTestResults@2
+    displayName: 'Publish Test Results'
+    inputs:
+      testResultsFormat: 'VSTest'
+      testResultsFiles: '$(Build.ArtifactStagingDirectory)/TestResults/**/*.trx'
+    condition: succeededOrFailed()
+
+  - task: MicrosoftSecurityDevOps@1
+    displayName: 'Microsoft Security DevOps'
+    inputs:
+      publish: true
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish CodeAnalysisLogs'
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: 'CodeAnalysisLogs'
+    condition: succeededOrFailed()

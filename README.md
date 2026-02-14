@@ -1,52 +1,49 @@
 # .NET DevSecOps Gates Demo
 
-A portfolio-ready **.NET 8 Web API** repo that showcases **DevSecOps security gates** in both **GitHub Actions** and **Azure DevOps**:
-- ✅ Build + test gates
-- ✅ Secrets scanning (Gitleaks demo rule)
-- ✅ SAST (CodeQL on GitHub)
-- ✅ Dependency risk checks
-- ✅ SBOM generation (SPDX JSON)
-- ✅ Azure DevOps security scanning with SARIF output (Microsoft Security DevOps)
+A portfolio-ready **.NET 8 Web API** repository demonstrating **DevSecOps security gates** in both **GitHub Actions** and **Azure DevOps**.
 
-> No real secrets are required or included. This repository is designed for screenshots, videos, and PDF handoff docs for Fiverr/Upwork.
+| Gate | Tool | Platform |
+|------|------|----------|
+| SAST | CodeQL (security-extended) | GitHub Actions |
+| Secrets Scanning | Gitleaks | GitHub Actions |
+| Dependency Review | dependency-review-action | GitHub Actions (PR) |
+| Vulnerability Check | `dotnet list package --vulnerable` | GitHub Actions |
+| SBOM Generation | Anchore SBOM Action (SPDX JSON) | GitHub Actions |
+| Security DevOps Scan | MicrosoftSecurityDevOps@1 (SARIF) | Azure DevOps |
+| Build + Test | dotnet CLI | Both |
+| Format Check | dotnet format | GitHub Actions |
 
----
-
-## What’s inside
-
-### Pipelines
-**GitHub Actions**
-- `.github/workflows/ci.yml`  
-  Builds/tests and publishes an SBOM artifact.
-- `.github/workflows/security.yml`  
-  Runs CodeQL (SAST), Gitleaks (secrets scan), and dependency review on PRs.
-
-**Azure DevOps**
-- `azure-pipelines.yml` (or `eng/pipelines/azure-pipelines.yml`)  
-  Builds/tests and runs Microsoft Security DevOps scan (SARIF + artifacts).
-
-### App
-- `src/GatesDemo.Api` — secure .NET 8 API demo
-- `tests/GatesDemo.Api.Tests` — unit tests (xUnit)
-
-### Docs for your portfolio assets
-- `docs/screenshot-checklist.md`
-- `docs/security-gates-report-sample.md`
-- `docs/portfolio-assets.md`
+> No real secrets are required or included. This repository is designed for screenshots, videos, and PDF portfolio docs.
 
 ---
 
-## Quick start (local)
+## Project Structure
 
-### Prereqs
-- .NET SDK 8.x
+```
+src/GatesDemo.Api/           Secure .NET 8 minimal API
+tests/GatesDemo.Api.Tests/   Integration tests (xUnit)
+.github/workflows/ci.yml     CI: build, test, format, vuln check, SBOM
+.github/workflows/security.yml  CodeQL + Gitleaks + Dependency Review
+azure-pipelines.yml           Azure DevOps: build, test, MSDO scan
+eng/pipelines/                Alternative pipeline location
+docs/                         Portfolio docs, screenshot checklist, report
+```
 
-### Build and test
+---
+
+## Quick Start
+
+### Prerequisites
+
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) (8.0.x)
+
+### Build and Test
+
 ```bash
 dotnet restore
 dotnet build -c Release
 dotnet test -c Release
-````
+```
 
 ### Run the API
 
@@ -54,109 +51,112 @@ dotnet test -c Release
 dotnet run --project src/GatesDemo.Api
 ```
 
-Default endpoints:
+### Endpoints
 
-* `GET /api/ping` → `{ "status": "ok" }`
-* `POST /api/echo` → validates input and returns a sanitized echo
-* `GET /api/redirect?target=...` → allowlist-only redirect (blocked unless host is allowed)
-* `GET /health` → health check
-
----
-
-## GitHub Actions: what to screenshot
-
-1. **CI success**
-
-* Actions → CI → successful run
-
-2. **Security scans**
-
-* Actions → Security → successful run
-
-3. **CodeQL alerts**
-
-* Security → Code scanning → alerts view
-
-4. **SBOM artifact**
-
-* CI run → Artifacts → `sbom.spdx.json`
-
-> Note: CodeQL alert UI is available on public repos. Private repos may require GitHub Advanced Security for full code scanning features.
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Health check |
+| GET | `/api/ping` | Returns `{ "status": "ok" }` |
+| POST | `/api/echo` | Validates and echoes a sanitized message |
+| GET | `/api/redirect?target=...` | Allowlist-only HTTPS redirect |
 
 ---
 
-## Azure DevOps: setup + what to screenshot
+## GitHub Actions
 
-### One-time setup
+### CI Workflow (`.github/workflows/ci.yml`)
 
-1. Create a new pipeline in Azure DevOps:
+Runs on push/PR to main:
+1. Build with `TreatWarningsAsErrors` (CI mode)
+2. Run tests
+3. Format check (`dotnet format --verify-no-changes`)
+4. Vulnerability check (`dotnet list package --vulnerable`)
+5. SBOM generation (SPDX JSON artifact)
 
-   * Pipelines → New pipeline → select this repo → “Existing Azure Pipelines YAML file”
-2. Select `azure-pipelines.yml`
-3. Install the **Microsoft Security DevOps** extension in your Azure DevOps organization (required).
+### Security Workflow (`.github/workflows/security.yml`)
 
-### Screenshots to capture
+Runs on push/PR to main:
+1. **CodeQL** — C# SAST with `security-extended` queries
+2. **Gitleaks** — Secrets scanning with custom demo rule
+3. **Dependency Review** — Blocks PRs introducing vulnerable dependencies (PR only)
 
-* Pipeline run summary (green)
-* Artifacts showing `CodeAnalysisLogs` / SARIF output
+> **Note:** Code Scanning alerts and Dependency Review UI features require the repository to be **public**, or require [GitHub Advanced Security](https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security) licensing for private repositories.
 
----
+### Dependabot
 
-## Demo scenarios (for proof screenshots)
-
-### 1) Secrets scanning failure (safe demo)
-
-This repo uses a demo-only Gitleaks rule in `.gitleaks.toml`.
-
-To demonstrate a failing PR:
-
-1. Create a branch and add a file like `docs/demo-leak.txt`:
-
-   ```
-   DEMO_SECRET=leak_me
-   ```
-2. Open a PR to `main`
-3. Capture the failed workflow screenshot
-4. Close the PR (do not merge)
-
-### 2) CodeQL “before/after” (optional)
-
-Use the demo branches (if present):
-
-* `demo/vulnerable-codeql` → intentionally introduces a CodeQL-detectable issue (demo-only)
-* `demo/fix-codeql` → fixes it properly
-
-Create PRs from each branch into `main` to capture:
-
-* “finding detected” screenshot
-* “fixed / resolved” screenshot
+Configured in `.github/dependabot.yml` for weekly updates to GitHub Actions and NuGet packages.
 
 ---
 
-## Project standards used
+## Azure DevOps
 
-* Secure-by-default API behavior (validation, safe redirects, sensible middleware)
-* Central package management (`Directory.Packages.props`)
-* Consistent build settings (`Directory.Build.props`)
-* Minimal, portfolio-focused documentation
+### One-Time Setup
+
+1. Install the [Microsoft Security DevOps](https://marketplace.visualstudio.com/items?itemName=ms-securitydevops.microsoft-security-devops-azdevops) extension from the Azure DevOps Marketplace (org-level).
+2. Create a new pipeline: **Pipelines > New pipeline > Existing Azure Pipelines YAML file** > select `azure-pipelines.yml`.
+
+### What the Pipeline Does
+
+1. Installs .NET 8 SDK
+2. Restore, build, and test
+3. Publishes test results (`.trx`)
+4. Runs **MicrosoftSecurityDevOps@1** scan with SARIF output
+5. Publishes `CodeAnalysisLogs` artifact (downloadable SARIF files)
 
 ---
 
-## What this repo is for
+## Demo Scenarios
 
-This repo exists to demonstrate that you can deliver a **PR-based DevSecOps gates install**:
+### 1. Secrets Scanning Failure (Safe Demo)
 
-* A buyer’s repo → you add gates → runs fail/pass → you ship handoff docs
-* You capture screenshots/video/PDF assets without using client IP
+The `.gitleaks.toml` includes a demo-only rule matching `DEMO_SECRET=...`.
+
+```bash
+git checkout -b demo/secrets-leak
+echo "DEMO_SECRET=leak_me" > docs/demo-leak.txt
+git add docs/demo-leak.txt
+git commit -m "Add demo leak for Gitleaks testing"
+git push -u origin demo/secrets-leak
+```
+
+Open a PR to `main`, capture the Gitleaks failure screenshot, then close the PR.
+
+### 2. CodeQL Before/After
+
+**Vulnerable branch** (`demo/vulnerable-codeql`):
+- Removes redirect allowlist validation (open redirect)
+- Marked with `// DEMO VULNERABLE - do not merge` comments
+- Open PR to main > capture CodeQL alert screenshot > close PR
+
+**Fix branch** (`demo/fix-codeql`):
+- Restores the allowlist validation (same as main)
+- Open PR to main > capture clean CodeQL result > close PR
+
+---
+
+## Build Conventions
+
+- **Central Package Management** — all versions in `Directory.Packages.props`
+- **Shared Build Props** — `Directory.Build.props` sets `net8.0`, nullable, analyzers
+- **CI Strictness** — `TreatWarningsAsErrors` enabled only when `ContinuousIntegrationBuild=true`
+- **SDK Pin** — `global.json` pins to .NET 8.0.x SDK
+
+---
+
+## Portfolio Docs
+
+| File | Purpose |
+|------|---------|
+| `docs/screenshot-checklist.md` | Exact screenshot targets for both platforms |
+| `docs/security-gates-report-sample.md` | PDF-ready security gates report |
+| `docs/portfolio-assets.md` | Video script, gig captions, asset checklist |
 
 ---
 
 ## License
 
-Choose a license that fits your publishing goals (MIT is common for portfolio templates).
+[MIT](LICENSE)
 
----
+## Security
 
-## Contact / Security
-
-See `SECURITY.md` for reporting guidance.
+See [SECURITY.md](SECURITY.md) for vulnerability reporting guidance.
