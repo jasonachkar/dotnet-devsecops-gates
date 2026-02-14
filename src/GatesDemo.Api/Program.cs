@@ -229,6 +229,47 @@ app.MapGet("/api/redirect", (string? target, IOptions<RedirectOptions> redirectO
 })
 .RequireRateLimiting("fixed");
 
+// =============================================================================
+// DEMO VULNERABLE ENDPOINTS — Do not merge into main
+// =============================================================================
+// These endpoints intentionally contain security vulnerabilities to demonstrate
+// CodeQL's ability to detect them. They exist only on the demo/vulnerable-codeql
+// branch and should NEVER be merged.
+
+// DEMO VULNERABLE (CWE-79): Reflected XSS — user input in HTML response
+// CodeQL query: cs/web/xss
+app.MapGet("/api/demo/xss", async (HttpContext ctx) =>
+{
+    var query = ctx.Request.Query["q"].ToString();
+    if (string.IsNullOrWhiteSpace(query))
+    {
+        ctx.Response.StatusCode = 400;
+        await ctx.Response.WriteAsync("Missing 'q' parameter");
+        return;
+    }
+
+    // BAD: user input written directly into HTML without encoding
+    ctx.Response.ContentType = "text/html";
+    await ctx.Response.WriteAsync($"<h1>Search results for: {query}</h1>");
+});
+
+// DEMO VULNERABLE (CWE-601): Unvalidated redirect
+// CodeQL query: cs/web/unvalidated-url-redirection
+app.MapGet("/api/demo/open-redirect", (HttpContext ctx) =>
+{
+    var target = ctx.Request.Query["target"].ToString();
+    if (string.IsNullOrWhiteSpace(target))
+    {
+        return Results.BadRequest(new { error = "target is required" });
+    }
+
+    // BAD: user input used directly in redirect without validation
+    ctx.Response.Redirect(target);
+    return Results.Empty;
+})
+.WithName("DemoOpenRedirect")
+.WithTags("Demo");
+
 app.Run();
 
 // =============================================================================
