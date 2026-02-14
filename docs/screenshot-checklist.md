@@ -11,7 +11,7 @@ Capture these screenshots in order for your portfolio and demo materials.
   Navigate to Security tab > Code scanning alerts. Capture the alerts page (should show zero alerts on main).
 
 - [ ] **Gitleaks PR Failure**
-  Open a PR from `demo/secrets-leak` branch. Capture the failed Gitleaks check showing the `DEMO_SECRET` detection.
+  Open a PR from `demo/secrets-leak` branch. Capture the failed Gitleaks check showing the demo secret detection.
 
 - [ ] **Dependency Review on PR**
   Open any PR that modifies packages. Capture the Dependency Review check output.

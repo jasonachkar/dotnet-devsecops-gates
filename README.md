@@ -109,17 +109,21 @@ Configured in `.github/dependabot.yml` for weekly updates to GitHub Actions and 
 
 ### 1. Secrets Scanning Failure (Safe Demo)
 
-The `.gitleaks.toml` includes a demo-only rule matching `DEMO_SECRET=...`.
+The `.gitleaks.toml` includes a demo-only rule that detects lines starting with
+`DEMO_SECRET` followed by an equals sign and a value.
+
+To trigger a failure for screenshots:
 
 ```bash
 git checkout -b demo/secrets-leak
-echo "DEMO_SECRET=leak_me" > docs/demo-leak.txt
-git add docs/demo-leak.txt
+# Create a file whose first line is the token DEMO_SECRET, an equals sign, then a value:
+printf 'DEMO_SECRET=leak_me\n' > demo/demo-leak.txt
+git add demo/demo-leak.txt
 git commit -m "Add demo leak for Gitleaks testing"
 git push -u origin demo/secrets-leak
 ```
 
-Open a PR to `main`, capture the Gitleaks failure screenshot, then close the PR.
+Open a PR to `main`, capture the Gitleaks failure screenshot, then **close the PR without merging**.
 
 ### 2. CodeQL Before/After
 

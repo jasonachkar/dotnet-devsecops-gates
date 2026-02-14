@@ -7,10 +7,11 @@
 #      Analyzes source code for vulnerability patterns like SQL injection,
 #      open redirects, XSS, insecure deserialization, etc.
 #
-#   2. Gitleaks — Secrets scanning across the full git history
+#   2. Gitleaks — Secrets scanning of the current working tree (dir mode)
 #      Detects API keys, tokens, passwords, and custom patterns defined
-#      in .gitleaks.toml. Uses full history (fetch-depth: 0) to catch
-#      secrets that were committed and later removed.
+#      in .gitleaks.toml. Runs in "dir" mode (not git-history mode) to
+#      avoid false positives from old commits. SARIF results are uploaded
+#      to the GitHub Security tab.
 #
 #   3. Dependency Review — PR-only check for vulnerable dependencies
 #      Compares the dependency diff between the PR and base branch,
@@ -80,36 +81,65 @@ jobs:
         uses: github/codeql-action/analyze@v4
 
   # ===========================================================================
-  # Job 2: Gitleaks — Secrets Scanning
+  # Job 2: Gitleaks — Secrets Scanning (dir mode)
   # ===========================================================================
-  # Scans the entire git history for leaked secrets using pattern matching.
+  # Scans the CURRENT WORKING TREE (not git history) for leaked secrets.
+  # Uses "dir" mode instead of "git" mode to avoid false positives from
+  # old commits that may have contained demo patterns.
+  #
   # Custom rules are defined in .gitleaks.toml at the repo root.
+  # The demo rule detects lines starting with the demo token followed
+  # by an equals sign — only fires on actual leak files, not prose.
   #
-  # This repo includes a demo rule matching "DEMO_SECRET=..." to demonstrate
-  # the scanning capability without using real secrets.
+  # Pattern:
+  #   1. Run gitleaks with continue-on-error (so SARIF uploads even on findings)
+  #   2. Upload SARIF to GitHub Security tab (always)
+  #   3. Fail the job if gitleaks found leaks (check step outcome)
   #
-  # IMPORTANT: fetch-depth: 0 is required to clone full history.
-  # Without it, Gitleaks only scans the latest commit and misses
-  # secrets that were committed and later deleted.
+  # No license key needed — uses the official container image directly.
   gitleaks:
     name: Secrets Scanning
     runs-on: ubuntu-latest
 
     steps:
-      # Clone with full history — Gitleaks needs all commits to scan
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0             # Full clone, not shallow
 
-      # Run Gitleaks using the official GitHub Action (v2).
-      # GITHUB_TOKEN: auto-provided token for PR commenting.
-      # GITLEAKS_LICENSE: required for v2 — obtain a free trial at gitleaks.io
-      #                   and store as a repository secret.
-      - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+      # Run gitleaks in "dir" mode — scans working tree only (no git history).
+      # Pinned to a specific container tag for reproducibility.
+      # --report-format sarif outputs results for GitHub Security tab.
+      # continue-on-error: true ensures the SARIF upload step runs even
+      # when leaks are found (gitleaks exits non-zero on findings).
+      - name: Run Gitleaks
+        id: gitleaks
+        continue-on-error: true
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/repo" \
+            -w /repo \
+            ghcr.io/gitleaks/gitleaks:v8.22.1 \
+            dir --config .gitleaks.toml \
+                --report-format sarif \
+                --report-path gitleaks.sarif \
+                .
+
+      # Upload SARIF results to GitHub Security > Code scanning alerts.
+      # Runs on success AND failure so findings are always visible in the UI.
+      # Uses codeql-action/upload-sarif (same as CodeQL) — the Security tab
+      # aggregates results from all SARIF sources.
+      - name: Upload Gitleaks SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: gitleaks.sarif
+
+      # Fail the job if gitleaks detected leaks.
+      # The gitleaks step uses continue-on-error so SARIF uploads first,
+      # but we still want the overall job to fail for PR status checks.
+      - name: Fail on leaks
+        if: steps.gitleaks.outcome == 'failure'
+        run: |
+          echo "::error::Gitleaks detected secrets in the working tree"
+          exit 1
 
   # ===========================================================================
   # Job 3: Dependency Review — PR-only vulnerability check

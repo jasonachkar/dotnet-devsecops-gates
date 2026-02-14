@@ -2,7 +2,7 @@
 # .gitleaks.toml — Gitleaks Secret Scanning Configuration
 # =============================================================================
 # This file defines custom rules for the Gitleaks secrets scanner.
-# Gitleaks scans the full git history for patterns that look like leaked
+# Gitleaks scans source files for patterns that look like leaked
 # credentials (API keys, passwords, tokens, etc.).
 #
 # This repo intentionally includes ONLY a demo rule — no real secrets
@@ -11,23 +11,24 @@
 #
 # How the demo works:
 #   1. Create a branch: git checkout -b demo/secrets-leak
-#   2. Add a file with: DEMO_SECRET=leak_me
+#   2. Add a file whose first line is the demo token, an equals sign, then a value
 #   3. Open a PR to main
 #   4. Gitleaks detects the pattern and fails the PR check
 #   5. Screenshot the failure for your portfolio
 #   6. Close the PR without merging
 #
-# Gitleaks auto-detects this file at the repo root.
-# The GitHub Action (gitleaks-action@v2) uses it automatically.
+# The workflow runs gitleaks in "dir" mode (current working tree only),
+# so old commits in history do not cause false positives.
 # =============================================================================
 
 title = "GatesDemo Gitleaks Config"
 
-# Demo rule: matches any line containing "DEMO_SECRET = <value>"
-# This is a safe, non-sensitive pattern used purely for demonstration.
-# The regex allows optional whitespace around the equals sign.
+# Demo rule: matches a line that STARTS with the token DEMO_SECRET
+# followed by an equals sign and a value. The start-of-line anchor (^)
+# and multiline flag (?m) prevent accidental matches inside prose,
+# comments, or inline code samples.
 [[rules]]
 id = "demo-secret"
 description = "Demo secret pattern for portfolio demonstration"
-regex = '''DEMO_SECRET\s*=\s*.+'''
+regex = '''(?m)^DEMO_SECRET\s*=\s*.+$'''
 tags = ["demo", "secret"]

@@ -37,7 +37,8 @@
 
 **What it detects:** API keys, tokens, passwords, and custom patterns defined in `.gitleaks.toml`.
 
-**Custom rules:** This repo includes a demo rule for `DEMO_SECRET=...` patterns.
+**Custom rules:** This repo includes a demo rule that detects lines beginning with the
+token `DEMO_SECRET` followed by an equals sign and a value (see `.gitleaks.toml`).
 
 **How to triage findings:**
 1. **If real secret:** Immediately rotate the credential, then remove from history using `git filter-repo` or BFG
