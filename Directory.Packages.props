@@ -43,6 +43,6 @@
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
 
     <!-- Code coverage collector — generates coverage data during test runs -->
-    <PackageVersion Include="coverlet.collector" Version="6.0.2" />
+    <PackageVersion Include="coverlet.collector" Version="8.0.0" />
   </ItemGroup>
 </Project>
