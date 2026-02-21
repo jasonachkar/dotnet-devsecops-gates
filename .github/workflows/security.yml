@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Initialize CodeQL — sets up the analysis database for C#.
       # This must run BEFORE the build step so CodeQL can intercept
@@ -182,7 +182,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Run gitleaks in "dir" mode — scans working tree only (no git history).
       # Pinned to a specific container tag for reproducibility.
@@ -246,7 +246,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Semgrep
         run: pip install semgrep
@@ -300,7 +300,7 @@ jobs:
     if: github.event_name == 'pull_request'    # Only run on PRs, not pushes
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Analyze dependency changes introduced by this PR.
       # Fails if any new dependency has a known High or Critical vulnerability.
