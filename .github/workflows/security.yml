@@ -261,6 +261,7 @@ jobs:
         run: |
           semgrep scan \
             --config .semgrep/ \
+            --error \
             --sarif \
             --output semgrep.sarif \
             src/
