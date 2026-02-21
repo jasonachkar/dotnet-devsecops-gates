@@ -11,15 +11,15 @@ rules:
   - id: csharp-xss-response-write
     patterns:
       - pattern: |
-          var $VAR = ctx.Request.Query[$KEY].ToString();
+          var $VAR = $CTX.Request.Query[$KEY].ToString();
           ...
-          ctx.Response.WriteAsync($"...<$TAG>... {$VAR} ...</$TAG>...");
+          $CTX.Response.WriteAsync($EXPR);
       - pattern-not: |
-          var $VAR = ctx.Request.Query[$KEY].ToString();
+          var $VAR = $CTX.Request.Query[$KEY].ToString();
           ...
           $VAR = System.Net.WebUtility.HtmlEncode($VAR);
           ...
-          ctx.Response.WriteAsync(...);
+          $CTX.Response.WriteAsync(...);
     message: >
       User input from Request.Query is written directly into HTML via
       Response.WriteAsync without encoding. This allows reflected XSS.
@@ -43,15 +43,15 @@ rules:
   - id: csharp-open-redirect
     patterns:
       - pattern: |
-          var $VAR = ctx.Request.Query[$KEY].ToString();
+          var $VAR = $CTX.Request.Query[$KEY].ToString();
           ...
-          ctx.Response.Redirect($VAR);
+          $CTX.Response.Redirect($VAR);
       - pattern-not: |
-          var $VAR = ctx.Request.Query[$KEY].ToString();
+          var $VAR = $CTX.Request.Query[$KEY].ToString();
           ...
           if(<... Uri.TryCreate($VAR, ...) ...>) { ... }
           ...
-          ctx.Response.Redirect(...);
+          $CTX.Response.Redirect(...);
     message: >
       User input from Request.Query is passed directly to Response.Redirect
       without URL validation. This allows an attacker to redirect users to
