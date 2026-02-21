@@ -42,7 +42,7 @@ jobs:
       # Install .NET 8 SDK. The 8.0.x pattern picks the latest 8.0 patch.
       # This matches the SDK version pinned in global.json.
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '8.0.x'
 
