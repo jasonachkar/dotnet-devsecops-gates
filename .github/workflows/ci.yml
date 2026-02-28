@@ -73,7 +73,7 @@ jobs:
       # if: always() ensures results are uploaded even if tests fail,
       # so you can diagnose failures from the Actions UI.
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results
