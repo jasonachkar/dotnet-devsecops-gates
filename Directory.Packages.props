@@ -40,7 +40,7 @@
     <PackageVersion Include="xunit" Version="2.9.3" />
 
     <!-- xUnit runner for Visual Studio and dotnet test CLI (v2-compatible) -->
-    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
 
     <!-- Code coverage collector — generates coverage data during test runs -->
     <PackageVersion Include="coverlet.collector" Version="6.0.2" />
