@@ -305,6 +305,6 @@ jobs:
       # Analyze dependency changes introduced by this PR.
       # Fails if any new dependency has a known High or Critical vulnerability.
       - name: Dependency Review
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@v5
         with:
           fail-on-severity: high
